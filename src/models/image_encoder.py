@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torchvision import models
 
+
 class VGG16Encoder(nn.Module):
     """
     VGG-16-based image encoder for feature extraction.

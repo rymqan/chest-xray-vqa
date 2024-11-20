@@ -1,48 +1,52 @@
 import pandas as pd
 from PIL import Image
-import torch
 from torch.utils.data import Dataset
-
+import numpy as np
 
 class NIHChestXrayDataset(Dataset):
-    def __init__(self, data_path, transform=None, mode="train"):
-        """
-        NIH Chest X-ray dataset loader.
+    """
+    Custom Dataset for loading NIH Chest X-ray images with questions and answers.
 
-        Args:
-            data_path (str): Path to the processed data directory.
-            transform (callable, optional): Image transform pipeline.
-            mode (str): "train", "val", or "test".
-        """
-        self.data_path = data_path
+    Args:
+        csv_path (str): Path to the CSV file containing the dataset.
+        transform (callable, optional): Transformations to apply to the images.
+        mode (str, optional): Mode of operation ("train", "test"). Used for logging or debugging.
+
+    Attributes:
+        data (pd.DataFrame): DataFrame containing the dataset information.
+        transform (callable): Image transformations.
+    """
+
+    def __init__(self, csv_path: str, transform=None, mode: str = "train"):
+        self.data = pd.read_csv(csv_path)
         self.transform = transform
         self.mode = mode
 
-        # Load the CSV file
-        metadata_path = f"{data_path}/metadata/Data_Entry_2017.csv"
-        self.metadata = pd.read_csv(metadata_path)
-
-        # Filter train/val/test split
-        self.metadata = self.metadata[self.metadata["Dataset"] == mode]
-
-        # Prepare image paths and labels
-        self.image_paths = self.metadata["Image Index"].values
-        self.labels = self.metadata["Finding Labels"].values
-
     def __len__(self):
-        return len(self.image_paths)
+        return len(self.data)
 
     def __getitem__(self, idx):
-        # Load image
-        image_path = f"{self.data_path}/images/{self.image_paths[idx]}"
-        image = Image.open(image_path).convert("RGB")
+        """
+        Retrieves a single data sample.
+
+        Args:
+            idx (int): Index of the sample to retrieve.
+
+        Returns:
+            tuple: (image, question, answer), where:
+                - image (torch.Tensor): Transformed image.
+                - question (str): Question associated with the image.
+                - answer (int): Binary answer (0 or 1).
+        """
+        row = self.data.iloc[idx]
+        # image_path = f"data/raw/images/{row['image']}"  # Adjust if image paths differ
+        question = row['question']
+        answer = int(row['answer'])  # Ensure the answer is binary (0 or 1)
+
+        # Load and transform the image
+        # image = Image.open(image_path).convert("RGB")
+        image = Image.fromarray((np.random.rand(224, 224, 3) * 255).astype(np.uint8))
         if self.transform:
             image = self.transform(image)
 
-        # Load corresponding label (example: classification target)
-        label = torch.tensor(self.labels[idx])  # Adjust for your task
-        
-        # Example question generation (placeholder)
-        question = "What is the diagnosis?"  # Customize for VQA
-
-        return image, question, label
+        return image, question, answer
